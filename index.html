@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sphere Calculator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #F5EFEB;
+            margin: 20px;
+            color: black;
+        }
+        h1 {
+            background-color: #567C8D;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            border-radius: 5px;
+        }
+        form {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            width: 350px;
+            margin: auto;
+        }
+        label {
+            display: block;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            background-color: #2F4156;
+            color: white;
+            border: none;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 10px;
+            border-radius: 5px;
+        }
+        button:hover {
+            background-color: #1D2E40;
+        }
+        .result {
+            margin-top: 20px;
+            font-size: 18px;
+            background-color: #C8D9ED;
+            padding: 15px;
+            border-radius: 5px;
+            width: 350px;
+            margin: auto;
+            text-align: center;
+        }
+        canvas {
+            display: block;
+            margin: 20px auto;
+            border: 1px solid black;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+    <h1>Sphere Calculator</h1>
+
+    <form id="calculatorForm" onsubmit="calculate(event)">
+        <label for="radius">Radius of the circle (r):</label>
+        <input type="number" id="radius" placeholder="Enter radius (r)" step="any" required>
+        
+        <label for="layers">Number of layers (k):</label>
+        <input type="number" id="layers" placeholder="Enter number of layers (k)" required>
+        
+        <label for="petals">Number of petals (a):</label>
+        <input type="number" id="petals" placeholder="Enter number of petals (a)" required>
+        
+        <label for="piece">Desired piece (i):</label>
+        <input type="number" id="piece" placeholder="Enter desired piece (i)" required>
+        
+        <button type="submit">Calculate</button>
+    </form>
+    
+    <div class="result" id="result"></div>
+
+    <canvas id="canvas" width="400" height="300"></canvas>
+
+    <script>
+        function calculate(event) {
+            event.preventDefault();
+
+            try {
+                const r = parseFloat(document.getElementById('radius').value);
+                const k = parseInt(document.getElementById('layers').value);
+                const a = parseInt(document.getElementById('petals').value);
+                const i = parseInt(document.getElementById('piece').value);
+
+                if (k <= 0 || a <= 0 || i < 1 || i >= k) {
+                    document.getElementById('result').textContent = "Please enter values where k > 0, a > 0, and i is between 1 and k-1.";
+                    return;
+                }
+
+                const upperWidth = (2 * Math.PI * r * Math.cos((Math.PI / (2 * k)) * (k - i))) / a;
+                const bottomWidth = (2 * Math.PI * r * Math.cos((Math.PI / (2 * k)) * (k - (i + 1)))) / a;
+                const height = (2 * Math.PI * r) / (4 * k);
+                const surfaceArea = (((Math.PI ** 2) * (r ** 2)) / k) * (Math.cos(Math.PI / (4 * k))) *
+                    Array.from({ length: k }, (_, j) =>
+                        Math.cos((Math.PI / 2) - (Math.PI / 2) * (j + 1) / k + (Math.PI / (4 * k)))
+                    ).reduce((acc, val) => acc + val, 0);
+
+                const squareArea = (1 / 2) * (upperWidth * bottomWidth) * height;
+
+                document.getElementById('result').innerHTML = `
+                    <p><strong>Upper Width:</strong> ${upperWidth.toFixed(2)}</p>
+                    <p><strong>Bottom Width:</strong> ${bottomWidth.toFixed(2)}</p>
+                    <p><strong>Height:</strong> ${height.toFixed(2)}</p>
+                    <p><strong>Square Area:</strong> ${squareArea.toFixed(2)}</p>
+                    <p><strong>Surface Area (All of the sphere):</strong> ${surfaceArea.toFixed(2)}</p>
+                `;
+
+                drawRectangle(upperWidth, bottomWidth, height);
+            } catch (error) {
+                console.error("An error occurred:", error);
+                document.getElementById('result').textContent = "An error occurred in calculation. Please check your input values.";
+            }
+        }
+
+        function drawRectangle(upperWidth, bottomWidth, height) {
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const scale = 80;
+            const centerX = canvas.width / 2;
+            const startY = 50;
+
+            const upperW = upperWidth * scale;
+            const bottomW = bottomWidth * scale;
+            const h = height * scale;
+
+            const x1 = centerX - upperW / 2;
+            const x2 = centerX + upperW / 2;
+            const x3 = centerX - bottomW / 2;
+            const x4 = centerX + bottomW / 2;
+            const y1 = startY;
+            const y2 = startY + h;
+
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y1);
+            ctx.lineTo(x4, y2);
+            ctx.lineTo(x3, y2);
+            ctx.closePath();
+
+            ctx.fillStyle = "rgba(0, 150, 255, 0.5)";
+            ctx.fill();
+            ctx.strokeStyle = "black";
+            ctx.stroke();
+
+            ctx.fillStyle = "black";
+            ctx.font = "16px Arial";
+            ctx.textAlign = "center";
+
+            ctx.fillText(`Upper Width: ${upperWidth.toFixed(2)}`, centerX, y1 - 10);
+            ctx.fillText(`Bottom Width: ${bottomWidth.toFixed(2)}`, centerX, y2 + 20);
+            ctx.fillText(`Height: ${height.toFixed(2)}`, x2 + 50, (y1 + y2) / 2);
+        }
+    </script>
+</body>
+</html>
